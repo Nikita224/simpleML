@@ -23,6 +23,34 @@ public:
 	int* size;
 	int threadsNum;
 
+	void setLayersNotStudy(int n, int* p, string filename)
+	{
+		ifstream fin;
+		fin.open(filename);
+		srand(time(0));
+		layers = n;
+		neurons = new neuron * [n];
+		weights = new double** [n - 1];
+		size = new int[n];
+		for (int i = 0; i < n; i++)
+		{
+			size[i] = p[i];
+			neurons[i] = new neuron[p[i]];
+			if (i < n - 1)
+			{
+				weights[i] = new double* [p[i]];
+				for (int j = 0; j < p[i]; j++)
+				{
+					weights[i][j] = new double[p[i + 1]];
+					for (int k = 0; k < p[i + 1]; k++)
+					{
+						fin >> weights[i][j][k];
+					}
+				}
+			}
+		}
+	}
+
 	double sigm_pro(double x)
 	{
 		if ((fabs(x - 1) < 1e-9) || (fabs(x) < 1e-9)) return 0.0;
@@ -446,7 +474,25 @@ int main()
 			cout << "Веса сохранены!";
 		}
 	}
+	else
+	{
+		nn.setLayersNotStudy(l, size, "perfect_weights.txt");
+	}
+	fin.close();
 
+	cout << "Начать тест:(1/0) ";
+	bool to_start_test = 0;
+	cin >> to_start_test;
+	if (to_start_test)
+	{
+		fin.open("test.txt");
+		for (int i = 0; i < input_l; i++)
+			fin >> input[i];
+		nn.set_input(input);
+		result = nn.ForwardFeed();
+		cout << "Я считаю, что это буква " << char(result + 65) << "\n\n";
+	}
 
+	fin.close();
 	return 0;
 }
