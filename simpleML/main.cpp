@@ -11,7 +11,7 @@ struct neuron {
 	double value;
 	double error;
 	void act() {
-		value = 1 / (1 + exp(-value));
+		value = (1 / (1 + pow(2.71828, -value)));
 	}
 };
 
@@ -22,24 +22,6 @@ public:
 	double*** weights;
 	int* size;
 	int threadsNum;
-
-	void setThreadsNum(int num) {
-		threadsNum = num;
-	}
-
-	void Softmax(int LayerNumber)
-	{
-		double sum = 0.0;
-		for (int i = 0; i < size[LayerNumber]; i++)
-		{
-			sum += exp(neurons[LayerNumber][i].value);
-		}
-
-		for (int i = 0; i < size[LayerNumber]; i++)
-		{
-			neurons[LayerNumber][i].value = exp(neurons[LayerNumber][i].value) / sum;
-		}
-	}
 
 	void setLayersNotStudy(int n, int* p, string filename)
 	{
@@ -78,7 +60,10 @@ public:
 
 	double predict(double x)
 	{
-		return x;
+		if (x >= 0.8)
+			return 1;
+		else
+			return 0;
 	}
 
 	void setLayers(int n, int* p)
@@ -211,6 +196,35 @@ public:
 		return prediction;
 	}
 
+	void ErrorCounter(int LayerNumber, int start, int stop, double prediction, double rresult, double lr)
+	{
+		if (LayerNumber = layers - 1)
+		{
+			for (int j = start; j < stop; j++)
+			{
+				if (j != int(rresult))
+				{
+					neurons[LayerNumber][j].error = -(neurons[LayerNumber][j].value);
+				}
+				else
+				{
+					neurons[LayerNumber][j].error = 1.0 - (neurons[LayerNumber][j].value);
+				}
+			}
+		}
+		else
+		{
+			for (int j = start; j < stop; j++)
+			{
+				double error = 0.0;
+				for (int k = 0; k < size[LayerNumber + 1]; k++)
+				{
+					error += neurons[LayerNumber + 1][k].error * weights[LayerNumber][j][k];
+				}
+				neurons[LayerNumber][j].error = error;
+			}
+		}
+	}
 
 	void WeightsUpdater(int start, int stop, int LayerNum, int lr)
 	{
@@ -237,7 +251,7 @@ public:
 						if (j != int(rresult))
 							neurons[i][j].error = -(neurons[i][j].value);
 						else
-							neurons[i][j].error = 1.0 -(neurons[i][j].value);
+							neurons[i][j].error = 1.0 - (neurons[i][j].value);
 					}
 				}
 				else
@@ -373,45 +387,21 @@ public:
 		fout.close();
 		return 1;
 	}
-
-	void ErrorCounter(int LayerNumber, int start, int stop, double prediction, double rresult, double lr)
-	{
-		if (LayerNumber == layers - 1)
-		{
-			for (int j = start; j < stop; j++)
-			{
-				neurons[LayerNumber][j].error = (j == int(rresult)) ? (neurons[LayerNumber][j].value - 1.0) : neurons[LayerNumber][j].value;
-			}
-		}
-		else
-		{
-			for (int j = start; j < stop; j++)
-			{
-				double error = 0.0;
-				for (int k = 0; k < size[LayerNumber + 1]; k++)
-				{
-					error += neurons[LayerNumber + 1][k].error * weights[LayerNumber][j][k];
-				}
-				neurons[LayerNumber][j].error = error;
-			}
-		}
-	}
-
 };
 
 int main()
 {
+
 	srand(time(0));
 	setlocale(LC_ALL, "Russian");
 	ifstream fin;
 	ofstream fout;
 	const int l = 4;
 	const int input_l = 4096;
-	int size[l] = { input_l, 64, 32, 4 };
+	int size[l] = { input_l, 64, 32, 26 };
 
 	network nn;
 
-	nn.setThreadsNum(2);
 	double input[input_l];
 
 	char rresult;
@@ -419,7 +409,7 @@ int main()
 	double ra = 0;
 	int maxra = 0;
 	int maxraepoch = 0;
-	const int n = 27;
+	const int n = 52;
 	bool to_study = 0;
 
 	cout << "Производить обучение? ";
@@ -431,7 +421,7 @@ int main()
 		nn.setLayers(l, size);
 		for (int e = 0; ra / n * 100 < 100; e++)
 		{
-			cout << "Epoch #" << e << endl;
+			fout << "Epoch #" << e << endl;
 			double epoch_start = clock();
 			ra = 0;
 			double w_delta = 0;
@@ -459,7 +449,7 @@ int main()
 				}
 				else
 				{
-					nn.BackPropogation(result, rresult, 0.01);
+					nn.BackPropogation(result, rresult, 0.6);
 				}
 			}
 			fin.close();
