@@ -169,6 +169,29 @@ public:
 		return prediction;
 	}
 
+	double ForwardFeed(int tem)
+	{
+		setlocale(LC_ALL, "Russian");
+
+		double max = 0;
+		double prediction = 0;
+
+		for (int i = 1; i < layers; i++)
+			ForwardFeeder(i, 0, size[i]);
+
+		// Проход по нейронам последнего слоя
+		for (int i = 0; i < size[layers - 1]; i++)
+		{
+			if (neurons[layers - 1][i].value > max)
+			{
+				max = neurons[layers - 1][i].value;
+				prediction = i;
+			}
+		}
+
+		return prediction;
+	}
+
 	void ErrorCounter(int LayerNumber, int start, int stop, double prediction, double rresult, double lr)
 	{
 		if (LayerNumber == layers - 1)
@@ -369,18 +392,26 @@ int main()
 	}
 	fin.close();
 
+
 	cout << "Начать тест:(1/0) ";
 	bool to_start_test = 0;
 	cin >> to_start_test;
+	int colT = 0;
 	if (to_start_test)
 	{
+		cout << "Количество примеров: ";
+		cin >> colT;
 		fin.open("test.txt");
-		for (int i = 0; i < input_l; i++)
-			fin >> input[i];
-		nn.set_input(input);
-		result = nn.ForwardFeed();
-		cout << "Я считаю, что это буква " << char(result + 65) << "\n\n";
+		for (int j(0); j < colT; j++)
+		{
+			for (int i = 0; i < input_l; i++)
+				fin >> input[i];
+			nn.set_input(input);
+			result = nn.ForwardFeed(1);
+			cout << "Я считаю, что это буква " << char(result + 65) << "\n\n";
+		}
 	}
+
 
 	fin.close();
 	return 0;
