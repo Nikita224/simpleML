@@ -13,10 +13,28 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Файлы ресурсов\pasqal">
+      <UniqueIdentifier>{c1196f1b-8f61-48d7-a06c-da5eed890111}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Файлы ресурсов</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\x64\Debug\testcreator.pas">
+      <Filter>Файлы ресурсов\pasqal</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\x64\Debug\test.txt">
+      <Filter>Файлы ресурсов\pasqal</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\x64\Debug\image.png">
+      <Filter>Файлы ресурсов\pasqal</Filter>
+    </Image>
   </ItemGroup>
 </Project>

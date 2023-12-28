@@ -129,6 +129,15 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\x64\Debug\image.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\x64\Debug\test.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\x64\Debug\testcreator.pas" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
