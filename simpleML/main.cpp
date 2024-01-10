@@ -395,6 +395,7 @@ int main()
 	srand(time(0));
 	setlocale(LC_ALL, "Russian");
 	ifstream fin;
+	ifstream ftin;
 	ofstream fout;
 	const int l = 4;
 	const int input_l = 4096;
@@ -485,14 +486,27 @@ int main()
 	cin >> to_start_test;
 	if (to_start_test)
 	{
-		fin.open("test.txt");
-		for (int i = 0; i < input_l; i++)
-			fin >> input[i];
-		nn.set_input(input);
-		result = nn.ForwardFeed();
-		cout << "я считаю, что это буква " << char(result + 65) << "\n\n";
+		cout << " оличество примеров: ";
+		cin >> colT;
+		ftin.open("test.txt");
+		if (ftin.is_open())
+		{
+
+			for (int j(0); j < colT; j++)
+			{
+				for (int i = 0; i < input_l; i++)
+					ftin >> input[i];
+				ftin >> rresult;
+				cout << "Ќа тесте буква " << int(rresult - 65) << endl;
+				nn.set_input(input);
+				result = nn.ForwardFeed();
+				cout << "я считаю, что это буква " << char(result + 65) << "\n\n";
+			}
+		}
 	}
 
-	fin.close();
+
+	ftin.close();
+	cin >> rresult;
 	return 0;
 }
