@@ -256,7 +256,7 @@ public:
 	bool SaveWeights()
 	{
 		ofstream fout;
-		fout.open("weights.txt");
+		fout.open("lib/weights.txt");
 		for (int i = 0; i < layers; i++)
 		{
 			if (i < layers - 1)
@@ -307,7 +307,7 @@ int main()
 		nn.setLayers(l, size);
 		for (int e = 0; ra / n * 100 < 100; e++)
 		{
-			fout.open("output.txt");
+			fout.open("lib/output.txt");
 			if (!fout.is_open()) {
 				cout << "Ошибка открытия файла." << endl;
 				return 1;
@@ -317,7 +317,7 @@ int main()
 			ra = 0;
 			double w_delta = 0;
 
-			fin.open("lib.txt");
+			fin.open("lib/lib.txt");
 
 			for (int i = 0; i < n; i++)
 			{
@@ -367,7 +367,7 @@ int main()
 	}
 	else
 	{
-		nn.setLayersNotStudy(l, size, "perfect_weights.txt");
+		nn.setLayersNotStudy(l, size, "lib/perfect_weights.txt");
 	}
 	fin.close();
 
@@ -378,7 +378,7 @@ int main()
 	{
 		cout << "Количество примеров: ";
 		cin >> colT;
-		ftin.open("test.txt");
+		ftin.open("lib/test.txt");
 		if (ftin.is_open())
 		{
 
