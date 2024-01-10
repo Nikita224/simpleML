@@ -296,6 +296,7 @@ int main()
 	int maxraepoch = 0;
 	const int n = 77;
 	bool to_study = 0;
+	int colT = 0;
 
 	cout << "Производить обучение? ";
 	cin >> to_study;
@@ -386,7 +387,7 @@ int main()
 				for (int i = 0; i < input_l; i++)
 					ftin >> input[i];
 				ftin >> rresult;
-				cout << "На тесте буква " << int(rresult - 65) << endl;
+				cout << "На тесте буква " << rresult << endl;
 				nn.set_input(input);
 				result = nn.ForwardFeed();
 				cout << "Я считаю, что это буква " << char(result + 65) << "\n\n";
