@@ -23,6 +23,26 @@ public:
 	int* size;
 	int threadsNum;
 
+	~network() {
+		// Освобождение памяти для массива нейронов
+		for (int i = 0; i < layers; i++) {
+			delete[] neurons[i];
+		}
+		delete[] neurons;
+
+		// Освобождение памяти для массива весов
+		for (int i = 0; i < layers - 1; i++) {
+			for (int j = 0; j < size[i]; j++) {
+				delete[] weights[i][j];
+			}
+			delete[] weights[i];
+		}
+		delete[] weights;
+
+		// Освобождение памяти для массива размеров
+		delete[] size;
+	}
+
 	void setLayersNotStudy(int n, int* p, string filename)
 	{
 		ifstream fin;
@@ -124,67 +144,19 @@ public:
 	{
 		setlocale(LC_ALL, "Russian");
 
-		for (int i(1); i < layers; i++)
+		for (int i = 1; i < layers; i++)
 		{
-			if (threadsNum == 1)
-			{
-				thread th1([&]() {
-					LayersCleaner(i, 0, size[i]);
-					});
-				th1.join();
-			}
-			if (threadsNum == 2)
-			{
-				thread th1([&]() {
-					LayersCleaner(i, 0, int(floor(size[i] / 2)));
-					});
-				thread th2([&]() {
-					LayersCleaner(i, int(floor(size[i] / 2)), size[i]);
-					});
-				th1.join();
-				th2.join();
-			}
-			if (threadsNum == 4)
-			{
-				if (size[i] == 1)
-				{
-					cout << "Выполняю чистку слоя 1-м ядром" << endl;
-					thread th1([&]() {
-						LayersCleaner(i, 0, size[i]);
-						});
-					th1.join();
-				}
-				if ((size[i] == 2) or (size[i] == 3))
-				{
-					cout << "Выполняю чистку слоя 2-мя ядрaми" << endl;
-					thread th1([&]() {
-						LayersCleaner(i, 0, int(floor(size[i] / 2)));
-						});
-					thread th2([&]() {LayersCleaner(i, int(floor(size[i] / 2)), size[i]); });
-					th1.join();
-					th2.join();
-				}
-				if (size[i] >= 4)
-				{
-					int start1 = 0; int stop1 = int(size[i] / 4);
-					int start2 = int(size[i] / 4); int stop2 = int(size[i] / 2);
-					int start3 = int(size[i] / 2); int stop3 = int(size[i] - floor(size[i] / 4));
-					int start4 = int(size[i] - floor(size[i] / 4)); int stop4 = size[i];
+			// Обнуление или обновление значений нейронов в текущем слое
+			LayersCleaner(i, 0, size[i]);
 
-					thread th1([&]() {LayersCleaner(i, start1, stop1); });
-					thread th2([&]() {LayersCleaner(i, start2, stop2); });
-					thread th3([&]() {LayersCleaner(i, start3, stop3); });
-					thread th4([&]() {LayersCleaner(i, start4, stop4); });
-
-					th1.join();
-					th2.join();
-					th3.join();
-					th4.join();
-				}
-			}
+			// Прямой проход для обновления значений нейронов
+			ForwardFeeder(i, 0, size[i]);
 		}
+
 		double max = 0;
 		double prediction = 0;
+
+		// Проход по нейронам последнего слоя
 		for (int i = 0; i < size[layers - 1]; i++)
 		{
 			if (neurons[layers - 1][i].value > max)
@@ -193,12 +165,13 @@ public:
 				prediction = i;
 			}
 		}
+
 		return prediction;
 	}
 
 	void ErrorCounter(int LayerNumber, int start, int stop, double prediction, double rresult, double lr)
 	{
-		if (LayerNumber = layers - 1)
+		if (LayerNumber == layers - 1)
 		{
 			for (int j = start; j < stop; j++)
 			{
@@ -242,128 +215,39 @@ public:
 	{
 		for (int i = layers - 1; i > 0; i--)
 		{
-			if (threadsNum == 1)
-			{
-				if (i == layers - 1)
-				{
-					for (int j = 0; j < size[i]; j++)
-					{
-						if (j != int(rresult))
-							neurons[i][j].error = -(neurons[i][j].value);
-						else
-							neurons[i][j].error = 1.0 - (neurons[i][j].value);
-					}
-				}
-				else
-				{
-					for (int j = 0; j < size[i]; j++)
-					{
-						double error = 0.0;
-						for (int k = 0; k < size[i + 1]; k++)
-						{
-							error += neurons[i + 1][k].error * weights[i][j][k];
-						}
-						neurons[i][j].error = error;
-					}
-				}
-			}
-			if (threadsNum == 2)
-			{
-				thread th1([&]() {
-					ErrorCounter(i, 0, int(size[i] / 2), prediction, rresult, lr);
-					});
-				thread th2([&]() {
-					ErrorCounter(i, int(size[i] / 2), size[i], prediction, rresult, lr);
-					});
-				th1.join();
-				th2.join();
-			}
-			if (threadsNum == 4)
-			{
-				if (size[i] < 4)
-				{
-					if (i == layers - 1)
-					{
-						for (int j = 0; j < size[i]; j++)
-						{
-							if (j != int(rresult))
-								neurons[i][j].error = -(neurons[i][j].value);
-							else
-								neurons[i][j].error = 1.0 - (neurons[i][j].value);
-						}
-					}
-					else
-					{
-						for (int j = 0; j < size[i]; j++)
-						{
-							double error = 0.0;
-							for (int k = 0; k < size[i + 1]; k++)
-							{
-								error += neurons[i + 1][k].error * weights[i][j][k];
-							}
-							neurons[i][j].error = error;
-						}
-					}
-				}
-				if (size[i] >= 4)
-				{
-					int start1 = 0; int stop1 = int(size[i] / 4);
-					int start2 = int(size[i] / 4); int stop2 = int(size[i] / 2);
-					int start3 = int(size[i] / 2); int stop3 = int(size[i] - floor(size[i] / 4));
-					int start4 = int(size[i] - floor(size[i] / 4)); int stop4 = size[i];
-					thread th1([&]() {
-						ErrorCounter(i, start1, stop1, prediction, rresult, lr);
-						});
-					thread th2([&]() {
-						ErrorCounter(i, start2, stop2, prediction, rresult, lr);
-						});
-					thread th3([&]() {
-						ErrorCounter(i, start3, stop3, prediction, rresult, lr);
-						});
-					thread th4([&]() {
-						ErrorCounter(i, start4, stop4, prediction, rresult, lr);
-						});
-					th1.join();
-					th2.join();
-					th3.join();
-					th4.join();
-				}
-			}
-		}
-		for (int i = 0; i < layers - 1; i++)
-		{
-			if (threadsNum == 1)
+			// Вычисление ошибок нейронов
+			if (i == layers - 1)
 			{
 				for (int j = 0; j < size[i]; j++)
 				{
-					for (int k = 0; k < size[i + 1]; k++)
-					{
-						weights[i][j][k] += neurons[i + 1][k].error * sigm_pro(neurons[i + 1][k].value) * neurons[i][j].value;
-					}
+					if (j != int(rresult))
+						neurons[i][j].error = -(neurons[i][j].value);
+					else
+						neurons[i][j].error = 1.0 - (neurons[i][j].value);
 				}
 			}
-			if (threadsNum == 2)
+			else
 			{
-				thread th1([&]() {
-					WeightsUpdater(0, int(size[i] / 2), i, lr);
-					});
-				thread th2([&]() {
-					WeightsUpdater(int(size[i] / 2), size[i], i, lr);
-					});
-				th1.join();
-				th2.join();
-			}
-			if (threadsNum == 4)
-			{
-				if (size[i] < 4)
+				for (int j = 0; j < size[i]; j++)
 				{
-					for (int j = 0; j < size[i]; j++)
+					double error = 0.0;
+					for (int k = 0; k < size[i + 1]; k++)
 					{
-						for (int k = 0; k < size[i + 1]; k++)
-						{
-							weights[i][j][k] += lr * neurons[i + 1][k].error * sigm_pro(neurons[i + 1][k].value) * neurons[i][j].value;
-						}
+						error += neurons[i + 1][k].error * weights[i][j][k];
 					}
+					neurons[i][j].error = error;
+				}
+			}
+		}
+
+		for (int i = 0; i < layers - 1; i++)
+		{
+			// Обновление весов
+			for (int j = 0; j < size[i]; j++)
+			{
+				for (int k = 0; k < size[i + 1]; k++)
+				{
+					weights[i][j][k] += lr * neurons[i + 1][k].error * sigm_pro(neurons[i + 1][k].value) * neurons[i][j].value;
 				}
 			}
 		}
@@ -410,7 +294,7 @@ int main()
 	double ra = 0;
 	int maxra = 0;
 	int maxraepoch = 0;
-	const int n = 52;
+	const int n = 77;
 	bool to_study = 0;
 
 	cout << "Производить обучение? ";
@@ -422,7 +306,12 @@ int main()
 		nn.setLayers(l, size);
 		for (int e = 0; ra / n * 100 < 100; e++)
 		{
-			fout << "Epoch #" << e << endl;
+			fout.open("output.txt");
+			if (!fout.is_open()) {
+				cout << "Ошибка открытия файла." << endl;
+				return 1;
+			}
+			cout << "Epoch #" << e << endl;
 			double epoch_start = clock();
 			ra = 0;
 			double w_delta = 0;
