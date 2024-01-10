@@ -24,13 +24,13 @@ public:
 	int threadsNum;
 
 	~network() {
-		// Освобождение памяти для массива нейронов
+		// ГЋГ±ГўГ®ГЎГ®Г¦Г¤ГҐГ­ГЁГҐ ГЇГ Г¬ГїГІГЁ Г¤Г«Гї Г¬Г Г±Г±ГЁГўГ  Г­ГҐГ©Г°Г®Г­Г®Гў
 		for (int i = 0; i < layers; i++) {
 			delete[] neurons[i];
 		}
 		delete[] neurons;
 
-		// Освобождение памяти для массива весов
+		// ГЋГ±ГўГ®ГЎГ®Г¦Г¤ГҐГ­ГЁГҐ ГЇГ Г¬ГїГІГЁ Г¤Г«Гї Г¬Г Г±Г±ГЁГўГ  ГўГҐГ±Г®Гў
 		for (int i = 0; i < layers - 1; i++) {
 			for (int j = 0; j < size[i]; j++) {
 				delete[] weights[i][j];
@@ -39,7 +39,7 @@ public:
 		}
 		delete[] weights;
 
-		// Освобождение памяти для массива размеров
+		// ГЋГ±ГўГ®ГЎГ®Г¦Г¤ГҐГ­ГЁГҐ ГЇГ Г¬ГїГІГЁ Г¤Г«Гї Г¬Г Г±Г±ГЁГўГ  Г°Г Г§Г¬ГҐГ°Г®Гў
 		delete[] size;
 	}
 
@@ -146,17 +146,40 @@ public:
 
 		for (int i = 1; i < layers; i++)
 		{
-			// Обнуление или обновление значений нейронов в текущем слое
+			// ГЋГЎГ­ГіГ«ГҐГ­ГЁГҐ ГЁГ«ГЁ Г®ГЎГ­Г®ГўГ«ГҐГ­ГЁГҐ Г§Г­Г Г·ГҐГ­ГЁГ© Г­ГҐГ©Г°Г®Г­Г®Гў Гў ГІГҐГЄГіГ№ГҐГ¬ Г±Г«Г®ГҐ
 			LayersCleaner(i, 0, size[i]);
 
-			// Прямой проход для обновления значений нейронов
+			// ГЏГ°ГїГ¬Г®Г© ГЇГ°Г®ГµГ®Г¤ Г¤Г«Гї Г®ГЎГ­Г®ГўГ«ГҐГ­ГЁГї Г§Г­Г Г·ГҐГ­ГЁГ© Г­ГҐГ©Г°Г®Г­Г®Гў
 			ForwardFeeder(i, 0, size[i]);
 		}
 
 		double max = 0;
 		double prediction = 0;
 
-		// Проход по нейронам последнего слоя
+		// ГЏГ°Г®ГµГ®Г¤ ГЇГ® Г­ГҐГ©Г°Г®Г­Г Г¬ ГЇГ®Г±Г«ГҐГ¤Г­ГҐГЈГ® Г±Г«Г®Гї
+		for (int i = 0; i < size[layers - 1]; i++)
+		{
+			if (neurons[layers - 1][i].value > max)
+			{
+				max = neurons[layers - 1][i].value;
+				prediction = i;
+			}
+		}
+
+		return prediction;
+	}
+
+	double ForwardFeed(int tem)
+	{
+		setlocale(LC_ALL, "Russian");
+
+		double max = 0;
+		double prediction = 0;
+
+		for (int i = 1; i < layers; i++)
+			ForwardFeeder(i, 0, size[i]);
+
+		// ГЏГ°Г®ГµГ®Г¤ ГЇГ® Г­ГҐГ©Г°Г®Г­Г Г¬ ГЇГ®Г±Г«ГҐГ¤Г­ГҐГЈГ® Г±Г«Г®Гї
 		for (int i = 0; i < size[layers - 1]; i++)
 		{
 			if (neurons[layers - 1][i].value > max)
@@ -215,7 +238,7 @@ public:
 	{
 		for (int i = layers - 1; i > 0; i--)
 		{
-			// Вычисление ошибок нейронов
+			// Г‚Г»Г·ГЁГ±Г«ГҐГ­ГЁГҐ Г®ГёГЁГЎГ®ГЄ Г­ГҐГ©Г°Г®Г­Г®Гў
 			if (i == layers - 1)
 			{
 				for (int j = 0; j < size[i]; j++)
@@ -242,7 +265,7 @@ public:
 
 		for (int i = 0; i < layers - 1; i++)
 		{
-			// Обновление весов
+			// ГЋГЎГ­Г®ГўГ«ГҐГ­ГЁГҐ ГўГҐГ±Г®Гў
 			for (int j = 0; j < size[i]; j++)
 			{
 				for (int k = 0; k < size[i + 1]; k++)
@@ -298,7 +321,7 @@ int main()
 	bool to_study = 0;
 	int colT = 0;
 
-	cout << "Производить обучение? ";
+	cout << "ГЏГ°Г®ГЁГ§ГўГ®Г¤ГЁГІГј Г®ГЎГіГ·ГҐГ­ГЁГҐ? ";
 	cin >> to_study;
 
 	double time = 0;
@@ -309,7 +332,7 @@ int main()
 		{
 			fout.open("output.txt");
 			if (!fout.is_open()) {
-				cout << "Ошибка открытия файла." << endl;
+				cout << "ГЋГёГЁГЎГЄГ  Г®ГІГЄГ°Г»ГІГЁГї ГґГ Г©Г«Г ." << endl;
 				return 1;
 			}
 			cout << "Epoch #" << e << endl;
@@ -335,7 +358,7 @@ int main()
 
 				if (result == rresult)
 				{
-					cout << "Угадал букву " << char(rresult + 65) << "\t\t\t****" << endl;
+					cout << "Г“ГЈГ Г¤Г Г« ГЎГіГЄГўГі " << char(rresult + 65) << "\t\t\t****" << endl;
 					ra++;
 				}
 				else
@@ -362,7 +385,7 @@ int main()
 		}
 		if (nn.SaveWeights())
 		{
-			cout << "Веса сохранены!";
+			cout << "Г‚ГҐГ±Г  Г±Г®ГµГ°Г Г­ГҐГ­Г»!";
 		}
 	}
 	else
@@ -371,12 +394,14 @@ int main()
 	}
 	fin.close();
 
-	cout << "Начать тест:(1/0) ";
+
+	cout << "ГЌГ Г·Г ГІГј ГІГҐГ±ГІ:(1/0) ";
 	bool to_start_test = 0;
 	cin >> to_start_test;
+	int colT = 0;
 	if (to_start_test)
 	{
-		cout << "Количество примеров: ";
+		cout << "ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЇГ°ГЁГ¬ГҐГ°Г®Гў: ";
 		cin >> colT;
 		ftin.open("test.txt");
 		if (ftin.is_open())
@@ -387,10 +412,10 @@ int main()
 				for (int i = 0; i < input_l; i++)
 					ftin >> input[i];
 				ftin >> rresult;
-				cout << "На тесте буква " << rresult << endl;
+				cout << "ГЌГ  ГІГҐГ±ГІГҐ ГЎГіГЄГўГ  " << rresult << endl;
 				nn.set_input(input);
 				result = nn.ForwardFeed();
-				cout << "Я считаю, что это буква " << char(result + 65) << "\n\n";
+				cout << "Гџ Г±Г·ГЁГІГ Гѕ, Г·ГІГ® ГЅГІГ® ГЎГіГЄГўГ  " << char(result + 65) << "\n\n";
 			}
 		}
 	}
