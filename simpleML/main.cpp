@@ -321,7 +321,7 @@ int main()
 	bool to_study = 0;
 	int colT = 0;
 
-	cout << "Ïðîèçâîäèòü îáó÷åíèå? ";
+	cout << "Nachat obuchenie? (0/1): ";
 	cin >> to_study;
 
 	double time = 0;
@@ -332,7 +332,7 @@ int main()
 		{
 			fout.open("lib/output.txt");
 			if (!fout.is_open()) {
-				cout << "Îøèáêà îòêðûòèÿ ôàéëà." << endl;
+				cout << "Fail ne bil otkrit\nlib/output.txt" << endl;
 				return 1;
 			}
 			cout << "Epoch #" << e << endl;
@@ -358,7 +358,7 @@ int main()
 
 				if (result == rresult)
 				{
-					cout << "Óãàäàë áóêâó " << char(rresult + 65) << "\t\t\t****" << endl;
+					cout << "Opredelil bukvy: " << char(rresult + 65) << "\t\t\t****" << endl;
 					ra++;
 				}
 				else
@@ -385,7 +385,7 @@ int main()
 		}
 		if (nn.SaveWeights())
 		{
-			cout << "Âåñà ñîõðàíåíû!";
+			cout << "Vesa uspeshno save!";
 		}
 	}
 	else
@@ -395,13 +395,12 @@ int main()
 	fin.close();
 
 
-	cout << "Íà÷àòü òåñò:(1/0) ";
+	cout << "Nachat test?:(1/0) ";
 	bool to_start_test = 0;
 	cin >> to_start_test;
-	int colT = 0;
 	if (to_start_test)
 	{
-		cout << "Êîëè÷åñòâî ïðèìåðîâ: ";
+		cout << "Kol-vo primerov v teste: ";
 		cin >> colT;
 		ftin.open("lib/test.txt");
 		if (ftin.is_open())
@@ -412,10 +411,10 @@ int main()
 				for (int i = 0; i < input_l; i++)
 					ftin >> input[i];
 				ftin >> rresult;
-				cout << "Íà òåñòå áóêâà " << rresult << endl;
+				cout << "Po faktu bukva: " << rresult << endl;
 				nn.set_input(input);
 				result = nn.ForwardFeed();
-				cout << "ß ñ÷èòàþ, ÷òî ýòî áóêâà " << char(result + 65) << "\n\n";
+				cout << "Opredeleno kak bukva: " << char(result + 65) << "\n\n";
 			}
 		}
 	}
