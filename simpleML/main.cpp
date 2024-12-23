@@ -181,7 +181,6 @@ public:
     // Прямое распространение по всей сети
     double ForwardFeed()
     {
-        setlocale(LC_ALL, "Russian");
 
         for (int i = 1; i < layers; i++)
         {
@@ -211,7 +210,6 @@ public:
     // Прямое распространение с возможностью передачи номера темы
     double ForwardFeed(int tem)
     {
-        setlocale(LC_ALL, "Russian");
 
         double max = 0;
         double prediction = 0;
@@ -369,7 +367,6 @@ int main()
     srand(time(0));
 
     // Установка локали для корректного отображения текста
-    setlocale(LC_ALL, "Russian");
 
     ifstream fin;
     ifstream ftin;
@@ -395,7 +392,7 @@ int main()
     int colT = 0;
 
     // Запрос пользователя о начале обучения
-    cout << "Начать обучение? (0/1): ";
+    cout << "Start training? (0/1): ";
     cin >> to_study;
 
     double time = 0;
@@ -407,7 +404,7 @@ int main()
         {
             fout.open("lib/output.txt");
             if (!fout.is_open()) {
-                cout << "Файл не был открыт\nlib/output.txt" << endl;
+                cout << "The file was not opened\nlib/output.txt" << endl;
                 return 1;
             }
             cout << "Epoch #" << e << endl;
@@ -437,7 +434,7 @@ int main()
                 // Проверка правильности предсказания
                 if (result == rresult)
                 {
-                    cout << "Определена буква: " << char(rresult + 65) << "\t\t\t****" << endl;
+                    cout << "Defined letter: " << char(rresult + 65) << "\t\t\t****" << endl;
                     ra++;
                 }
                 else
@@ -448,9 +445,9 @@ int main()
             }
             fin.close();
             double epoch_stop = clock();
-            cout << "Правильные ответы: " << ra / n * 100 << "% \t Максимальная правильность: " << double(maxra) / n * 100 << "(эпоха " << maxraepoch << " )" << endl;
+            cout << "Correct answers: " << ra / n * 100 << "% \t Maximum correctness: " << double(maxra) / n * 100 << "(era " << maxraepoch << " )" << endl;
 
-            cout << "Время, необходимое для завершения: " << time / 1000 << " мс\t\t\tВремя эпохи: " << epoch_stop - epoch_start << endl;
+            cout << "Time required to complete: " << time / 1000 << " ms\t\t\tTime of the era: " << epoch_stop - epoch_start << endl;
             time = 0;
 
             if (ra > maxra)
@@ -465,7 +462,7 @@ int main()
         }
         if (nn.SaveWeights())
         {
-            cout << "Веса успешно сохранены!";
+            cout << "Weights saved successfully!";
         }
     }
     else
@@ -476,12 +473,12 @@ int main()
     fin.close();
 
     // Запуск тестирования
-    cout << "Начать тест?:(1/0) ";
+    cout << "Start test?:(1/0) ";
     bool to_start_test = 0;
     cin >> to_start_test;
     if (to_start_test)
     {
-        cout << "Количество примеров в тесте: ";
+        cout << "Number of examples in the test: ";
         cin >> colT;
         ftin.open("lib/test.txt");
         if (ftin.is_open())
@@ -491,10 +488,10 @@ int main()
                 for (int i = 0; i < input_l; i++)
                     ftin >> input[i];
                 ftin >> rresult;
-                cout << "По факту буква: " << rresult << endl;
+                cout << "In fact, the letter: " << rresult << endl;
                 nn.set_input(input);
                 result = nn.ForwardFeed();
-                cout << "Определено как буква: " << char(result + 65) << "\n\n";
+                cout << "Defined as letter: " << char(result + 65) << "\n\n";
             }
         }
     }
