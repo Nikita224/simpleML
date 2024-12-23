@@ -2,8 +2,8 @@
 #include <thread>
 #include <random>
 #include <time.h>
-#include <Windows.h>
 #include <iostream>
+
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -102,8 +102,9 @@ public:
     }
 
     // Установка параметров сети и инициализация случайными весами
-    void setLayers(int n, int* p)
+    void setLayers(int n, int* p, int threadsNumber = 4)
     {
+        threadsNum = threadsNumber;
         srand(time(0));
         layers = n;
         neurons = new neuron * [n];
@@ -149,14 +150,29 @@ public:
     }
 
     // Прямое распространение входных данных по сети
-    void ForwardFeeder(int LayerNumber, int start, int stop)
-    {
-        for (int j = start; j < stop; j++)
-        {
-            for (int k(0); k < size[LayerNumber - 1]; k++) {
+
+    void ForwardFeederThread(int LayerNumber, int start, int stop) {
+        for (int j = start; j < stop; j++) {
+            for (int k = 0; k < size[LayerNumber - 1]; k++) {
                 neurons[LayerNumber][j].value += neurons[LayerNumber - 1][k].value * weights[LayerNumber - 1][k][j];
             }
             neurons[LayerNumber][j].act();
+        }
+    }
+
+    void ForwardFeeder(int LayerNumber, int start, int stop) {
+        int threadCount = this->threadsNum > 0 ? this->threadsNum : 1;
+        int neuronsPerThread = (stop - start) / threadCount;
+        std::vector<std::thread> threads;
+
+        for (int i = 0; i < threadCount; ++i) {
+            int threadStart = start + i * neuronsPerThread;
+            int threadStop = (i + 1 == threadCount) ? stop : start + (i + 1) * neuronsPerThread;
+            threads.emplace_back(&network::ForwardFeederThread, this, LayerNumber, threadStart, threadStop);
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
         }
     }
 
@@ -196,8 +212,10 @@ public:
         double max = 0;
         double prediction = 0;
 
-        for (int i = 1; i < layers; i++)
+        for (int i = 1; i < layers; i++) {
+            LayersCleaner(i, 0, size[i]);
             ForwardFeeder(i, 0, size[i]);
+        }
 
         // Поиск максимального значения на выходном слое
         for (int i = 0; i < size[layers - 1]; i++)
@@ -213,29 +231,37 @@ public:
     }
 
     // Расчет ошибки для каждого нейрона в указанном слое
-    void ErrorCounter(int LayerNumber, int start, int stop, double prediction, double rresult, double lr)
-    {
-        if (LayerNumber == layers - 1)
-        {
-            for (int j = start; j < stop; j++)
-            {
-                if (j != int(rresult))
-                {
+    void ErrorCounter(int LayerNumber, double prediction, double rresult, double lr) {
+        int threadCount = this->threadsNum;
+        int neuronsPerThread = size[LayerNumber] / threadCount;
+        std::vector<std::thread> threads;
+
+        for (int i = 0; i < threadCount; ++i) {
+            int start = i * neuronsPerThread;
+            int stop = (i + 1 == threadCount) ? size[LayerNumber] : (i + 1) * neuronsPerThread;
+            threads.emplace_back(&network::ErrorCounterThread, this, LayerNumber, start, stop, prediction, rresult, lr);
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+
+    void ErrorCounterThread(int LayerNumber, int start, int stop, double prediction, double rresult, double lr) {
+        if (LayerNumber == layers - 1) {
+            for (int j = start; j < stop; j++) {
+                if (j != int(rresult)) {
                     neurons[LayerNumber][j].error = -(neurons[LayerNumber][j].value);
                 }
-                else
-                {
+                else {
                     neurons[LayerNumber][j].error = 1.0 - (neurons[LayerNumber][j].value);
                 }
             }
         }
-        else
-        {
-            for (int j = start; j < stop; j++)
-            {
+        else {
+            for (int j = start; j < stop; j++) {
                 double error = 0.0;
-                for (int k = 0; k < size[LayerNumber + 1]; k++)
-                {
+                for (int k = 0; k < size[LayerNumber + 1]; k++) {
                     error += neurons[LayerNumber + 1][k].error * weights[LayerNumber][j][k];
                 }
                 neurons[LayerNumber][j].error = error;
@@ -244,14 +270,26 @@ public:
     }
 
     // Обновление весов на указанном слое
-    void WeightsUpdater(int start, int stop, int LayerNum, int lr)
-    {
-        int i = LayerNum;
-        for (int j = start; j < stop; j++)
-        {
-            for (int k = 0; k < size[i + 1]; k++)
-            {
-                weights[i][j][k] += lr * neurons[i + 1][k].error * sigm_pro(neurons[i + 1][k].value) * neurons[i][j].value;
+    void WeightsUpdater(int LayerNum, double lr) {
+        int threadCount = this->threadsNum;
+        int neuronsPerThread = size[LayerNum] / threadCount;
+        std::vector<std::thread> threads;
+
+        for (int i = 0; i < threadCount; ++i) {
+            int start = i * neuronsPerThread;
+            int stop = (i + 1 == threadCount) ? size[LayerNum] : (i + 1) * neuronsPerThread;
+            threads.emplace_back(&network::WeightsUpdaterThread, this, LayerNum, start, stop, lr);
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+
+    void WeightsUpdaterThread(int LayerNum, int start, int stop, double lr) {
+        for (int j = start; j < stop; j++) {
+            for (int k = 0; k < size[LayerNum + 1]; k++) {
+                weights[LayerNum][j][k] += lr * neurons[LayerNum + 1][k].error * sigm_pro(neurons[LayerNum + 1][k].value) * neurons[LayerNum][j].value;
             }
         }
     }
@@ -392,12 +430,93 @@ bool checkAndRemoveFile(const std::string& filePath) {
     return true; // Если файл не существует, можно загружать
 }
 
+void downloadWeightsFromServer(const std::string& serverIp, int port, const std::string& outputPath) {
+    WSADATA wsaData;
+    SOCKET sock = INVALID_SOCKET;
+    struct sockaddr_in server;
+
+    // Инициализация Winsock
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        throw std::runtime_error("WSAStartup failed");
+    }
+
+    // Создание сокета
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == INVALID_SOCKET) {
+        WSACleanup();
+        throw std::runtime_error("Socket creation failed");
+    }
+
+    // Настройка адреса сервера
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    server.sin_addr.s_addr = inet_addr(serverIp.c_str());
+
+    // Подключение к серверу
+    if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
+        closesocket(sock);
+        WSACleanup();
+        throw std::runtime_error("Connection to server failed");
+    }
+
+    std::cout << "Connected to server. Downloading weights..." << std::endl;
+
+    // Открытие файла для записи
+    std::ofstream outFile(outputPath, std::ios::binary);
+    if (!outFile.is_open()) {
+        closesocket(sock);
+        WSACleanup();
+        throw std::runtime_error("Failed to open output file for writing");
+    }
+
+    // Прием данных
+    char buffer[1024];
+    int bytesRead;
+    while ((bytesRead = recv(sock, buffer, sizeof(buffer), 0)) > 0) {
+        outFile.write(buffer, bytesRead);
+    }
+
+    outFile.close();
+    closesocket(sock);
+    WSACleanup();
+
+    std::cout << "Weights downloaded successfully to " << outputPath << "." << std::endl;
+}
+
+// Проверка существования файла и его удаление при необходимости
+bool checkAndRemoveFile(const std::string& filePath) {
+    // Проверяем, существует ли файл
+    std::ifstream file(filePath);
+    if (file.good()) {
+        file.close();
+        char choice;
+        std::cout << "File " << filePath << " already exists. Overwrite? (y/n): ";
+        std::cin >> choice;
+
+        if (choice == 'y' || choice == 'Y') {
+            // Удаляем файл
+            if (std::remove(filePath.c_str()) == 0) {
+                std::cout << "File " << filePath << " removed.\n";
+                return true;
+            }
+            else {
+                std::cerr << "Error: Unable to remove file " << filePath << ".\n";
+                return false;
+            }
+        }
+        else {
+            std::cout << "File not overwritten. Using existing file.\n";
+            return false;
+        }
+    }
+
+    return true; // Если файл не существует, можно загружать
+}
 
 int main()
 {
     // Инициализация генератора случайных чисел
     srand(time(0));
-
 
     ifstream fin;
     ifstream ftin;
@@ -424,7 +543,9 @@ int main()
     const std::string weightsFile = "lib/perfect_weights.txt";
 
     // Запрос пользователя о начале обучения
-    cout << "Start training(0/1): ";
+
+    cout << "Start training? (0/1): ";
+
     cin >> to_study;
 
     double time = 0;
@@ -505,6 +626,7 @@ int main()
                 // Загрузка весов с сервера
                 downloadWeightsFromServer("45.144.232.161", 554, weightsFile);
             }
+
             // Использование загруженных весов
             nn.setLayersNotStudy(l, size, weightsFile);
         }
