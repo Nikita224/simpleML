@@ -3,7 +3,10 @@
 #include <random>
 #include <time.h>
 #include <iostream>
-
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h> // Для дополнительных функций, например inet_pton
+#endif
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -375,7 +378,12 @@ void downloadWeightsFromServer(const std::string& serverIp, int port, const std:
     // Настройка адреса сервера
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
-    server.sin_addr.s_addr = inet_addr(serverIp.c_str());
+    if (inet_pton(AF_INET, serverIp.c_str(), &server.sin_addr) <= 0) {
+        closesocket(sock);
+        WSACleanup();
+        throw std::runtime_error("Invalid address or address not supported");
+    }
+
     // Подключение к серверу
     if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
         closesocket(sock);
@@ -430,88 +438,6 @@ bool checkAndRemoveFile(const std::string& filePath) {
     return true; // Если файл не существует, можно загружать
 }
 
-void downloadWeightsFromServer(const std::string& serverIp, int port, const std::string& outputPath) {
-    WSADATA wsaData;
-    SOCKET sock = INVALID_SOCKET;
-    struct sockaddr_in server;
-
-    // Инициализация Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        throw std::runtime_error("WSAStartup failed");
-    }
-
-    // Создание сокета
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == INVALID_SOCKET) {
-        WSACleanup();
-        throw std::runtime_error("Socket creation failed");
-    }
-
-    // Настройка адреса сервера
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-    server.sin_addr.s_addr = inet_addr(serverIp.c_str());
-
-    // Подключение к серверу
-    if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
-        closesocket(sock);
-        WSACleanup();
-        throw std::runtime_error("Connection to server failed");
-    }
-
-    std::cout << "Connected to server. Downloading weights..." << std::endl;
-
-    // Открытие файла для записи
-    std::ofstream outFile(outputPath, std::ios::binary);
-    if (!outFile.is_open()) {
-        closesocket(sock);
-        WSACleanup();
-        throw std::runtime_error("Failed to open output file for writing");
-    }
-
-    // Прием данных
-    char buffer[1024];
-    int bytesRead;
-    while ((bytesRead = recv(sock, buffer, sizeof(buffer), 0)) > 0) {
-        outFile.write(buffer, bytesRead);
-    }
-
-    outFile.close();
-    closesocket(sock);
-    WSACleanup();
-
-    std::cout << "Weights downloaded successfully to " << outputPath << "." << std::endl;
-}
-
-// Проверка существования файла и его удаление при необходимости
-bool checkAndRemoveFile(const std::string& filePath) {
-    // Проверяем, существует ли файл
-    std::ifstream file(filePath);
-    if (file.good()) {
-        file.close();
-        char choice;
-        std::cout << "File " << filePath << " already exists. Overwrite? (y/n): ";
-        std::cin >> choice;
-
-        if (choice == 'y' || choice == 'Y') {
-            // Удаляем файл
-            if (std::remove(filePath.c_str()) == 0) {
-                std::cout << "File " << filePath << " removed.\n";
-                return true;
-            }
-            else {
-                std::cerr << "Error: Unable to remove file " << filePath << ".\n";
-                return false;
-            }
-        }
-        else {
-            std::cout << "File not overwritten. Using existing file.\n";
-            return false;
-        }
-    }
-
-    return true; // Если файл не существует, можно загружать
-}
 
 int main()
 {
