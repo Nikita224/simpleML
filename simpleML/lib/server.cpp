@@ -41,6 +41,7 @@ int main() {
             continue;
         }
 
+
         std::cout << "Client connected!" << std::endl;
 
         // Открываем файл для чтения
@@ -61,9 +62,9 @@ int main() {
         file.close();
         std::cout << "File sent to client." << std::endl;
 
+
         close(new_socket);
     }
-
     close(server_fd);
     return 0;
 }
