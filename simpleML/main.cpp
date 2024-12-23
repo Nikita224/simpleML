@@ -5,6 +5,8 @@
 #include <Windows.h>
 #include <iostream>
 
+#pragma comment(lib, "ws2_32.lib")
+
 using namespace std;
 
 struct neuron {
@@ -317,6 +319,78 @@ public:
         return 1;
     }
 };
+// Скачиваем готовые веса
+void downloadWeightsFromServer(const std::string& serverIp, int port, const std::string& outputPath) {
+    WSADATA wsaData;
+    SOCKET sock = INVALID_SOCKET;
+    struct sockaddr_in server;
+    // Инициализация Winsock
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        throw std::runtime_error("WSAStartup failed");
+    }
+    // Создание сокета
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == INVALID_SOCKET) {
+        WSACleanup();
+        throw std::runtime_error("Socket creation failed");
+    }
+    // Настройка адреса сервера
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    server.sin_addr.s_addr = inet_addr(serverIp.c_str());
+    // Подключение к серверу
+    if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
+        closesocket(sock);
+        WSACleanup();
+        throw std::runtime_error("Connection to server failed");
+    }
+    std::cout << "Connected to server. Downloading weights..." << std::endl;
+    // Открытие файла для записи
+    std::ofstream outFile(outputPath, std::ios::binary);
+    if (!outFile.is_open()) {
+        closesocket(sock);
+        WSACleanup();
+        throw std::runtime_error("Failed to open output file for writing");
+    }
+    // Прием данных
+    char buffer[1024];
+    int bytesRead;
+    while ((bytesRead = recv(sock, buffer, sizeof(buffer), 0)) > 0) {
+        outFile.write(buffer, bytesRead);
+    }
+    outFile.close();
+    closesocket(sock);
+    WSACleanup();
+    std::cout << "Weights downloaded successfully to " << outputPath << "." << std::endl;
+}
+
+// Проверка существования файла и его удаление при необходимости
+bool checkAndRemoveFile(const std::string& filePath) {
+    // Проверяем, существует ли файл
+    std::ifstream file(filePath);
+    if (file.good()) {
+        file.close();
+        char choice;
+        std::cout << "File " << filePath << " already exists. Overwrite? (y/n): ";
+        std::cin >> choice;
+        if (choice == 'y' || choice == 'Y') {
+            // Удаляем файл
+            if (std::remove(filePath.c_str()) == 0) {
+                std::cout << "File " << filePath << " removed.\n";
+                return true;
+            }
+            else {
+                std::cerr << "Error: Unable to remove file " << filePath << ".\n";
+                return false;
+            }
+        }
+        else {
+            std::cout << "File not overwritten. Using existing file.\n";
+            return false;
+        }
+    }
+    return true; // Если файл не существует, можно загружать
+}
 
 
 int main()
@@ -347,9 +421,10 @@ int main()
     const int n = 77;
     bool to_study = 0;
     int colT = 0;
+    const std::string weightsFile = "lib/perfect_weights.txt";
 
     // Запрос пользователя о начале обучения
-    cout << "Start training: ";
+    cout << "Start training(0/1): ";
     cin >> to_study;
 
     double time = 0;
@@ -424,8 +499,21 @@ int main()
     }
     else
     {
+        try {
+            // Проверяем существование файла и при необходимости удаляем его
+            if (checkAndRemoveFile(weightsFile)) {
+                // Загрузка весов с сервера
+                downloadWeightsFromServer("45.144.232.161", 554, weightsFile);
+            }
+            // Использование загруженных весов
+            nn.setLayersNotStudy(l, size, weightsFile);
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return 1;
+        }
         // Загрузка весов из файла, если обучение не требуется
-        nn.setLayersNotStudy(l, size, "lib/perfect_weights.txt");
+        nn.setLayersNotStudy(l, size, weightsFile);
     }
     fin.close();
 
